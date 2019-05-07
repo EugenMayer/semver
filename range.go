@@ -110,6 +110,7 @@ func (rf Range) AND(f Range) Range {
 //
 //  - `>1.0.0 <2.0.0 || >3.0.0 !4.2.1` would match `1.2.3`, `1.9.9`, `3.1.1`, but not `4.2.1`, `2.1.1`
 func ParseRange(s string) (Range, error) {
+	s = replaceStars(s)
 	parts := splitAndTrim(s)
 	orParts, err := splitORParts(parts)
 	if err != nil {
@@ -148,6 +149,13 @@ func ParseRange(s string) (Range, error) {
 
 	}
 	return orFn, nil
+}
+
+// Support * and X as wildcards by rewriting them to "x"
+func replaceStars(s string) string {
+	s = strings.ReplaceAll(s, "*", "x")
+	s = strings.ReplaceAll(s, "X", "x")
+	return s
 }
 
 // splitORParts splits the already cleaned parts by '||'.

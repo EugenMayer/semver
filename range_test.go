@@ -169,6 +169,25 @@ func TestBuildVersionRange(t *testing.T) {
 
 }
 
+func TestRepalceString(t *testing.T) {
+	tests := []struct {
+		i string
+		o string
+	}{
+		{">1.*.*", ">1.x.x"},
+		{"1.X", "1.x"},
+		{"2.8.*", "2.8.x"},
+		{"*", "x"},
+		{"X", "x"},
+	}
+	for _, tc := range tests {
+		o := replaceStars(tc.i)
+		if !reflect.DeepEqual(tc.o, o) {
+			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
+		}
+	}
+}
+
 func TestSplitORParts(t *testing.T) {
 	tests := []struct {
 		i []string
@@ -478,6 +497,13 @@ func TestParseRange(t *testing.T) {
 			{"2.1.8", true},
 			{"2.2.0", false},
 		}},
+		{"1.* || >=2.0.* <2.2.*", []tv{
+			{"0.9.2", false},
+			{"1.2.2", true},
+			{"2.0.0", true},
+			{"2.1.8", true},
+			{"2.2.0", false},
+		}},
 		{">1.2.2 <1.2.4 || >=2.0.0 <3.0.0", []tv{
 			{"1.2.2", false},
 			{"1.2.3", true},
@@ -521,6 +547,18 @@ func TestParseRangeTwo(t *testing.T) {
 			{"10.2.4", true},
 			{"10.0.0", true},
 			{"10.99.99", true},
+		}},
+		{"1.*", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", false},
+			{"0.99.99", false},
+		}},
+		{"1.X", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", false},
+			{"0.99.99", false},
 		}},
 	}
 
