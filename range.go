@@ -367,7 +367,7 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 				// if the part is only a major version number, ex: "1"
 				newParts = append(newParts, fmt.Sprintf(">=%d.0.0", major))
 				ap = fmt.Sprintf("<%d.0.0", major+1)
-			} else if strings.Contains(ap, "x") || strings.Contains(ap, "~") {
+			} else if strings.Contains(ap, "x") || strings.Contains(ap, "~") || strings.Contains(ap, "^") {
 				opStr, vStr, err := splitComparatorVersion(ap)
 				if err != nil {
 					return nil, err
@@ -409,6 +409,11 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 						resultOperator = "<"
 						shouldIncrementVersion = true
 					}
+				case "^":
+					newParts = append(newParts, ">="+flatVersion)
+					versionWildcardType = minorWildcard
+					resultOperator = "<"
+					shouldIncrementVersion = true
 				}
 
 				var resultVersion string

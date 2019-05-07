@@ -564,33 +564,6 @@ func TestParseRange(t *testing.T) {
 			{"0.99.99", true},
 			{"1021.99.99", true},
 		}},
-	}
-
-	for _, tc := range tests {
-		r, err := ParseRange(tc.i)
-		if err != nil && tc.t != nil {
-			t.Errorf("Error parsing range %q: %s", tc.i, err)
-			continue
-		}
-		for _, tvc := range tc.t {
-			v := MustParse(tvc.v)
-			if res := r(v); res != tvc.b {
-				t.Errorf("Invalid for case %q matching %q: Expected %t, got: %t", tc.i, tvc.v, tvc.b, res)
-			}
-		}
-
-	}
-}
-
-func TestParseRangeTwo(t *testing.T) {
-	type tv struct {
-		v string
-		b bool
-	}
-	tests := []struct {
-		i string
-		t []tv
-	}{
 		{"~10.1.2", []tv{
 			{"10.1.4", true},
 			{"10.1.1", false},
@@ -618,6 +591,86 @@ func TestParseRangeTwo(t *testing.T) {
 			{"9.9.9", true},
 			{"10.99.99", false},
 			{"10.0.0", false},
+		}},
+		{"^10.1.2", []tv{
+			{"10.1.4", true},
+			{"10.1.1", false},
+			{"10.2.0", true},
+			{"10.99.99", true},
+			{"11.0.0", false},
+			{"9.0.0", false},
+		}},
+		{"^10.1.x", []tv{
+			{"10.1.4", true},
+			{"10.1.1", true},
+			{"10.1.0", true},
+			{"10.2.0", true},
+			{"10.99.99", true},
+			{"11.0.0", false},
+			{"9.0.0", false},
+		}},
+		// Should act just like 10.x
+		{"^10.x", []tv{
+			{"10.1.4", true},
+			{"10.1.1", true},
+			{"10.2.0", true},
+			{"9.9.9", false},
+			{"10.99.99", true},
+		}},
+		{"^10.14.1 || ^8.15.0", []tv{
+			{"10.1.4", false},
+			{"10.1.1", false},
+			{"10.2.0", false},
+			{"10.14.0", false},
+			{"10.14.1", true},
+			{"10.16.1", true},
+			{"8.14.0", false},
+			{"8.15.0", true},
+			{"8.95.0", true},
+			{"10.0.0", false},
+			{"9.0.0", false},
+		}},
+		// what would this even mean?
+		{"^x", nil},
+	}
+
+	for _, tc := range tests {
+		r, err := ParseRange(tc.i)
+		if err != nil && tc.t != nil {
+			t.Errorf("Error parsing range %q: %s", tc.i, err)
+			continue
+		}
+		for _, tvc := range tc.t {
+			v := MustParse(tvc.v)
+			if res := r(v); res != tvc.b {
+				t.Errorf("Invalid for case %q matching %q: Expected %t, got: %t", tc.i, tvc.v, tvc.b, res)
+			}
+		}
+
+	}
+}
+
+func TestParseRangeTwo(t *testing.T) {
+	type tv struct {
+		v string
+		b bool
+	}
+	tests := []struct {
+		i string
+		t []tv
+	}{
+		{"^10.14.1 || ^8.15.0", []tv{
+			{"10.1.4", false},
+			{"10.1.1", false},
+			{"10.2.0", false},
+			{"10.14.0", false},
+			{"10.14.1", true},
+			{"10.16.1", true},
+			{"8.14.0", false},
+			{"8.15.0", true},
+			{"8.95.0", true},
+			{"10.0.0", false},
+			{"9.0.0", false},
 		}},
 	}
 
