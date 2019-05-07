@@ -84,6 +84,10 @@ func TestSplitAndTrim(t *testing.T) {
 		{"  >=   1.2.3   <=  1.2.3   ", []string{">=1.2.3", "<=1.2.3"}}, // Spaces between operator and version
 		{"1.2.3 || >=1.2.3 <1.2.3", []string{"1.2.3", "||", ">=1.2.3", "<1.2.3"}},
 		{"      1.2.3      ||     >=1.2.3     <1.2.3    ", []string{"1.2.3", "||", ">=1.2.3", "<1.2.3"}},
+		{"10", []string{"10"}},
+		{"1", []string{"1"}},
+		{"1.x", []string{"1.x"}},
+		{"x", []string{"x"}},
 	}
 
 	for _, tc := range tests {
@@ -108,6 +112,10 @@ func TestSplitComparatorVersion(t *testing.T) {
 		{"==1.2.3", []string{"==", "1.2.3"}},
 		{"!=1.2.3", []string{"!=", "1.2.3"}},
 		{"!1.2.3", []string{"!", "1.2.3"}},
+		{"1.x.x", []string{"", "1.x.x"}},
+		{"1.x", []string{"", "1.x"}},
+		{">=1.x", []string{">=", "1.x"}},
+		{"x", []string{"", "x"}},
 		{"error", nil},
 	}
 	for _, tc := range tests {
@@ -548,6 +556,13 @@ func TestParseRangeTwo(t *testing.T) {
 			{"10.0.0", true},
 			{"10.99.99", true},
 		}},
+		{"0", []tv{
+			{"0.2.2", true},
+			{"0.0.1", true},
+			{"2.0.0", false},
+			{"1.0.0", false},
+			{"0.99.9999", true},
+		}},
 		{"1.*", []tv{
 			{"1.2.2", true},
 			{"1.0.1", true},
@@ -559,6 +574,20 @@ func TestParseRangeTwo(t *testing.T) {
 			{"1.0.1", true},
 			{"2.0.0", false},
 			{"0.99.99", false},
+		}},
+		{"x", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", true},
+			{"0.99.99", true},
+			{"1021.99.99", true},
+		}},
+		{"*", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", true},
+			{"0.99.99", true},
+			{"1021.99.99", true},
 		}},
 	}
 

@@ -224,7 +224,7 @@ func splitAndTrim(s string) (result []string) {
 			lastChar = s[i]
 		}
 	}
-	if last < len(s)-1 {
+	if last < len(s) {
 		result = append(result, s[last:])
 	}
 
@@ -244,6 +244,10 @@ func splitAndTrim(s string) (result []string) {
 // splitComparatorVersion splits the comparator from the version.
 // Input must be free of leading or trailing spaces.
 func splitComparatorVersion(s string) (string, string, error) {
+	// handle case where there is only a wildcard
+	if s == "x" {
+		return "", "x", nil
+	}
 	i := strings.IndexFunc(s, unicode.IsDigit)
 	if i == -1 {
 		return "", "", fmt.Errorf("Could not get version from string: %q", s)
@@ -349,8 +353,13 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 	for _, p := range parts {
 		var newParts []string
 		for _, ap := range p {
-			// if the part is a number "1" or contains a wildcard: "1.x" "1.x.x"
-			if _, err := strconv.ParseInt(ap, 10, 64); err == nil || strings.Contains(ap, "x") {
+			if ap == "x" {
+				ap = ">=0.0.0"
+			} else if major, err := strconv.ParseInt(ap, 10, 64); err == nil {
+				// if the part is only a major version number, ex: "1"
+				newParts = append(newParts, fmt.Sprintf(">=%d.0.0", major))
+				ap = fmt.Sprintf("<%d.0.0", major+1)
+			} else if strings.Contains(ap, "x") {
 				opStr, vStr, err := splitComparatorVersion(ap)
 				if err != nil {
 					return nil, err
