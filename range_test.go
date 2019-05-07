@@ -200,6 +200,7 @@ func TestSplitORParts(t *testing.T) {
 func TestGetWildcardType(t *testing.T) {
 	wildcardTypeTests := []wildcardTypeTest{
 		{"x", majorWildcard},
+		{"1", minorWildcard},
 		{"1.x", minorWildcard},
 		{"1.2.x", patchWildcard},
 		{"fo.o.b.ar", noneWildcard},
@@ -220,6 +221,7 @@ func TestCreateVersionFromWildcard(t *testing.T) {
 	}{
 		{"1.2.x", "1.2.0"},
 		{"1.x", "1.0.0"},
+		{"1", "1.0.0"},
 	}
 
 	for _, tc := range tests {
@@ -484,6 +486,41 @@ func TestParseRange(t *testing.T) {
 			{"2.0.1", true},
 			{"2.9.9", true},
 			{"3.0.0", false},
+		}},
+	}
+
+	for _, tc := range tests {
+		r, err := ParseRange(tc.i)
+		if err != nil && tc.t != nil {
+			t.Errorf("Error parsing range %q: %s", tc.i, err)
+			continue
+		}
+		for _, tvc := range tc.t {
+			v := MustParse(tvc.v)
+			if res := r(v); res != tvc.b {
+				t.Errorf("Invalid for case %q matching %q: Expected %t, got: %t", tc.i, tvc.v, tvc.b, res)
+			}
+		}
+
+	}
+}
+
+func TestParseRangeTwo(t *testing.T) {
+	type tv struct {
+		v string
+		b bool
+	}
+	tests := []struct {
+		i string
+		t []tv
+	}{
+		// Major version only, should be parsed as MAJOR.x
+		{"10", []tv{
+			{"9.2.2", false},
+			{"11.2.3", false},
+			{"10.2.4", true},
+			{"10.0.0", true},
+			{"10.99.99", true},
 		}},
 	}
 

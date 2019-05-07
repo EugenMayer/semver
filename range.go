@@ -250,6 +250,14 @@ func getWildcardType(vStr string) wildcardType {
 	nparts := len(parts)
 	wildcard := parts[nparts-1]
 
+	// handle case where nparts = 1 and no wildcard
+	if nparts == 1 {
+		_, err := strconv.ParseUint(parts[0], 10, 64)
+		if err == nil {
+			return minorWildcard
+		}
+	}
+
 	possibleWildcardType := wildcardTypefromInt(nparts)
 	if wildcard == "x" {
 		return possibleWildcardType
@@ -270,6 +278,11 @@ func createVersionFromWildcard(vStr string) string {
 	// handle 1.x
 	if len(parts) == 2 {
 		return vStr2 + ".0"
+	}
+
+	// handle 1
+	if len(parts) == 1 {
+		return vStr2 + ".0.0"
 	}
 
 	return vStr2
@@ -322,12 +335,14 @@ func incrementMinorVersion(vStr string) (string, error) {
 // version operator:
 // 1.2.x       will become    >= 1.2.0 < 1.3.0
 // 1.x         will become    >= 1.0.0 < 2.0.0
+// 1           will become    >= 1.0.0 < 2.0.0
 func expandWildcardVersion(parts [][]string) ([][]string, error) {
 	var expandedParts [][]string
 	for _, p := range parts {
 		var newParts []string
 		for _, ap := range p {
-			if strings.Contains(ap, "x") {
+			// if the part is a number "1" or contains a wildcard: "1.x" "1.x.x"
+			if _, err := strconv.ParseInt(ap, 10, 64); err == nil || strings.Contains(ap, "x") {
 				opStr, vStr, err := splitComparatorVersion(ap)
 				if err != nil {
 					return nil, err
