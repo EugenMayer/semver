@@ -264,8 +264,8 @@ func TestIncrementMajorVersion(t *testing.T) {
 		i string
 		s string
 	}{
-		{"1.2.3", "2.2.3"},
-		{"1.2", "2.2"},
+		{"1.2.3", "2.0.0"},
+		{"1.2", "2.0"},
 		{"foo.bar", ""},
 	}
 
@@ -282,7 +282,7 @@ func TestIncrementMinorVersion(t *testing.T) {
 		i string
 		s string
 	}{
-		{"1.2.3", "1.3.3"},
+		{"1.2.3", "1.3.0"},
 		{"1.2", "1.3"},
 		{"foo.bar", ""},
 	}
@@ -521,6 +521,49 @@ func TestParseRange(t *testing.T) {
 			{"2.9.9", true},
 			{"3.0.0", false},
 		}},
+		// Major version only, should be parsed as MAJOR.x
+		{"10", []tv{
+			{"9.2.2", false},
+			{"11.2.3", false},
+			{"10.2.4", true},
+			{"10.0.0", true},
+			{"10.99.99", true},
+		}},
+		{"0", []tv{
+			{"0.2.2", true},
+			{"0.0.1", true},
+			{"2.0.0", false},
+			{"1.0.0", false},
+			{"0.99.9999", true},
+		}},
+		// *'s and X's as wildcards
+		{"1.*", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", false},
+			{"0.99.99", false},
+		}},
+		{"1.X", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", false},
+			{"0.99.99", false},
+		}},
+		// wildcard only should match any version
+		{"x", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", true},
+			{"0.99.99", true},
+			{"1021.99.99", true},
+		}},
+		{"*", []tv{
+			{"1.2.2", true},
+			{"1.0.1", true},
+			{"2.0.0", true},
+			{"0.99.99", true},
+			{"1021.99.99", true},
+		}},
 	}
 
 	for _, tc := range tests {
@@ -548,46 +591,33 @@ func TestParseRangeTwo(t *testing.T) {
 		i string
 		t []tv
 	}{
-		// Major version only, should be parsed as MAJOR.x
-		{"10", []tv{
-			{"9.2.2", false},
-			{"11.2.3", false},
-			{"10.2.4", true},
-			{"10.0.0", true},
+		{"~10.1.2", []tv{
+			{"10.1.4", true},
+			{"10.1.1", false},
+			{"10.2.0", false},
+		}},
+		{"~10.1.x", []tv{
+			{"10.1.4", true},
+			{"10.1.1", true},
+			{"10.1.0", true},
+			{"10.2.0", false},
+		}},
+		// Should act just like 10.x
+		{"~10.x", []tv{
+			{"10.1.4", true},
+			{"10.1.1", true},
+			{"10.2.0", true},
+			{"9.9.9", false},
 			{"10.99.99", true},
 		}},
-		{"0", []tv{
-			{"0.2.2", true},
-			{"0.0.1", true},
-			{"2.0.0", false},
-			{"1.0.0", false},
-			{"0.99.9999", true},
-		}},
-		{"1.*", []tv{
-			{"1.2.2", true},
-			{"1.0.1", true},
-			{"2.0.0", false},
-			{"0.99.99", false},
-		}},
-		{"1.X", []tv{
-			{"1.2.2", true},
-			{"1.0.1", true},
-			{"2.0.0", false},
-			{"0.99.99", false},
-		}},
-		{"x", []tv{
-			{"1.2.2", true},
-			{"1.0.1", true},
-			{"2.0.0", true},
-			{"0.99.99", true},
-			{"1021.99.99", true},
-		}},
-		{"*", []tv{
-			{"1.2.2", true},
-			{"1.0.1", true},
-			{"2.0.0", true},
-			{"0.99.99", true},
-			{"1021.99.99", true},
+		// yes, someone wrote this. I don't know why
+		{"~7.x || ~8.x || ~9.x", []tv{
+			{"7.1.0", true},
+			{"6.9.9", false},
+			{"8.2.5", true},
+			{"9.9.9", true},
+			{"10.99.99", false},
+			{"10.0.0", false},
 		}},
 	}
 

@@ -309,6 +309,11 @@ func incrementMajorVersion(vStr string) (string, error) {
 		return "", err
 	}
 	parts[0] = strconv.Itoa(i + 1)
+	for i := range parts {
+		if i != 0 {
+			parts[i] = "0"
+		}
+	}
 
 	return strings.Join(parts, "."), nil
 }
@@ -322,6 +327,9 @@ func incrementMinorVersion(vStr string) (string, error) {
 		return "", err
 	}
 	parts[1] = strconv.Itoa(i + 1)
+	if len(parts) > 2 {
+		parts[2] = "0"
+	}
 
 	return strings.Join(parts, "."), nil
 }
@@ -359,7 +367,7 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 				// if the part is only a major version number, ex: "1"
 				newParts = append(newParts, fmt.Sprintf(">=%d.0.0", major))
 				ap = fmt.Sprintf("<%d.0.0", major+1)
-			} else if strings.Contains(ap, "x") {
+			} else if strings.Contains(ap, "x") || strings.Contains(ap, "~") {
 				opStr, vStr, err := splitComparatorVersion(ap)
 				if err != nil {
 					return nil, err
@@ -389,6 +397,18 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 					newParts = append(newParts, "<"+flatVersion)
 					resultOperator = ">="
 					shouldIncrementVersion = true
+				case "~":
+					switch versionWildcardType {
+					case noneWildcard, patchWildcard:
+						newParts = append(newParts, ">="+flatVersion)
+						versionWildcardType = patchWildcard
+						resultOperator = "<"
+						shouldIncrementVersion = true
+					default:
+						newParts = append(newParts, ">="+flatVersion)
+						resultOperator = "<"
+						shouldIncrementVersion = true
+					}
 				}
 
 				var resultVersion string
