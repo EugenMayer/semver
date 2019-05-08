@@ -367,7 +367,7 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 				// if the part is only a major version number, ex: "1"
 				newParts = append(newParts, fmt.Sprintf(">=%d.0.0", major))
 				ap = fmt.Sprintf("<%d.0.0", major+1)
-			} else if strings.Contains(ap, "x") || strings.Contains(ap, "~") || strings.Contains(ap, "^") {
+			} else if strings.ContainsAny(ap, "x~^><=!") {
 				opStr, vStr, err := splitComparatorVersion(ap)
 				if err != nil {
 					return nil, err
@@ -380,23 +380,50 @@ func expandWildcardVersion(parts [][]string) ([][]string, error) {
 				var shouldIncrementVersion bool
 				switch opStr {
 				case ">":
-					resultOperator = ">="
-					shouldIncrementVersion = true
+					switch versionWildcardType {
+					case noneWildcard:
+						resultOperator = ">"
+						shouldIncrementVersion = false
+					default:
+						resultOperator = ">="
+						shouldIncrementVersion = true
+					}
 				case ">=":
 					resultOperator = ">="
 				case "<":
 					resultOperator = "<"
+					shouldIncrementVersion = false
 				case "<=":
 					resultOperator = "<"
 					shouldIncrementVersion = true
+					switch versionWildcardType {
+					case noneWildcard:
+						resultOperator = "<="
+						shouldIncrementVersion = false
+					default:
+						resultOperator = "<"
+						shouldIncrementVersion = true
+					}
 				case "", "=", "==":
-					newParts = append(newParts, ">="+flatVersion)
-					resultOperator = "<"
-					shouldIncrementVersion = true
+					switch versionWildcardType {
+					case noneWildcard:
+						resultOperator = ""
+						shouldIncrementVersion = false
+					default:
+						newParts = append(newParts, ">="+flatVersion)
+						resultOperator = "<"
+						shouldIncrementVersion = true
+					}
 				case "!=", "!":
-					newParts = append(newParts, "<"+flatVersion)
-					resultOperator = ">="
-					shouldIncrementVersion = true
+					switch versionWildcardType {
+					case noneWildcard:
+						resultOperator = "!"
+						shouldIncrementVersion = false
+					default:
+						newParts = append(newParts, "<"+flatVersion)
+						resultOperator = ">="
+						shouldIncrementVersion = true
+					}
 				case "~":
 					switch versionWildcardType {
 					case noneWildcard, patchWildcard:

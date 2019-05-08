@@ -632,6 +632,42 @@ func TestParseRange(t *testing.T) {
 		}},
 		// what would this even mean?
 		{"^x", nil},
+		// More range tests
+		{">=11 <12", []tv{
+			{"10.1.4", false},
+			{"11.0.0", true},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=11.x <12.x", []tv{
+			{"10.1.4", false},
+			{"11.0.0", true},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8.* <12", []tv{
+			{"10.1.4", true},
+			{"11.0.0", true},
+			{"8.0.0", true},
+			{"7.9.0", false},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8 <12", []tv{
+			{"10.1.4", true},
+			{"11.0.0", true},
+			{"8.0.0", true},
+			{"7.9.0", false},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8.9.1 <9.0", []tv{
+			{"8.9.1", true},
+			{"8.9.0", false},
+			{"9.0.0", false},
+			{"8.9.2", true},
+			{"10.0.0", false},
+		}},
 	}
 
 	for _, tc := range tests {
@@ -658,21 +694,7 @@ func TestParseRangeTwo(t *testing.T) {
 	tests := []struct {
 		i string
 		t []tv
-	}{
-		{"^10.14.1 || ^8.15.0", []tv{
-			{"10.1.4", false},
-			{"10.1.1", false},
-			{"10.2.0", false},
-			{"10.14.0", false},
-			{"10.14.1", true},
-			{"10.16.1", true},
-			{"8.14.0", false},
-			{"8.15.0", true},
-			{"8.95.0", true},
-			{"10.0.0", false},
-			{"9.0.0", false},
-		}},
-	}
+	}{}
 
 	for _, tc := range tests {
 		r, err := ParseRange(tc.i)
