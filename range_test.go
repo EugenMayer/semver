@@ -177,24 +177,24 @@ func TestBuildVersionRange(t *testing.T) {
 
 }
 
-func TestRepalceString(t *testing.T) {
-	tests := []struct {
-		i string
-		o string
-	}{
-		{">1.*.*", ">1.x.x"},
-		{"1.X", "1.x"},
-		{"2.8.*", "2.8.x"},
-		{"*", "x"},
-		{"X", "x"},
-	}
-	for _, tc := range tests {
-		o := replaceStars(tc.i)
-		if !reflect.DeepEqual(tc.o, o) {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
-		}
-	}
-}
+// func TestRepalceString(t *testing.T) {
+// 	tests := []struct {
+// 		i string
+// 		o string
+// 	}{
+// 		{">1.*.*", ">1.x.x"},
+// 		{"1.X", "1.x"},
+// 		{"2.8.*", "2.8.x"},
+// 		{"*", "x"},
+// 		{"X", "x"},
+// 	}
+// 	for _, tc := range tests {
+// 		o := replaceStars(tc.i)
+// 		if !reflect.DeepEqual(tc.o, o) {
+// 			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
+// 		}
+// 	}
+// }
 
 func TestSplitORParts(t *testing.T) {
 	tests := []struct {
@@ -709,6 +709,26 @@ func TestParseRangeTwo(t *testing.T) {
 			}
 		}
 
+	}
+}
+
+func TestHyphenReplace(t *testing.T) {
+	re := getRegex()
+	tests := []struct {
+		i string
+		o string
+	}{
+		{">1.2.3", ">1.2.3"},
+		{"1.2 - 3.4.5", ">=1.2.0 <=3.4.5"},
+		{"1.2.3 - 3.4", ">=1.2.3 <3.5.0"},
+		{"1.2 - 3.4", ">=1.2.0 <3.5.0"},
+	}
+
+	for _, tc := range tests {
+		o := hyphenReplace(re, tc.i)
+		if !reflect.DeepEqual(tc.o, o) {
+			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
+		}
 	}
 }
 

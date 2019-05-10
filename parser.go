@@ -10,8 +10,8 @@ func getRegex() map[string]*regexp.Regexp {
 	var MaxSafeComponentLength = 16
 
 	// The actual regexps go on exports.re
-	var src map[string]string
-	var re map[string]*regexp.Regexp
+	src := make(map[string]string)
+	re := make(map[string](*regexp.Regexp))
 
 	// The following Regular Expressions can be used for tokenizing,
 	// validating, and parsing SemVer version strings.
@@ -133,7 +133,7 @@ func getRegex() map[string]*regexp.Regexp {
 
 	src["TILDETRIM"] = "(\\s*)" + src["LONETILDE"] + "\\s+"
 	// re["TILDETRIM"] = new RegExp(src["TILDETRIM"], "g")
-	re["TILDETRIM"] = regexp.MustCompile("(?g)" + src["TILDETRIM"])
+	// re["TILDETRIM"] = regexp.MustCompile("(?g)" + src["TILDETRIM"])
 	// var tildeTrimReplace = "$1~"
 
 	src["TILDE"] = "^" + src["LONETILDE"] + src["XRANGEPLAIN"] + "$"
@@ -145,7 +145,7 @@ func getRegex() map[string]*regexp.Regexp {
 
 	src["CARETTRIM"] = "(\\s*)" + src["LONECARET"] + "\\s+"
 	// re["CARETTRIM"] = new RegExp(src["CARETTRIM"], "g")
-	re["CARETTRIM"] = regexp.MustCompile("(?g)" + src["CARETTRIM"])
+	// re["CARETTRIM"] = regexp.MustCompile("(?g)" + src["CARETTRIM"])
 	// var caretTrimReplace = "$1^"
 
 	src["CARET"] = "^" + src["LONECARET"] + src["XRANGEPLAIN"] + "$"
@@ -162,7 +162,7 @@ func getRegex() map[string]*regexp.Regexp {
 
 	// this one has to use the /g flag
 	// re["COMPARATORTRIM"] = new RegExp(src["COMPARATORTRIM"], "g")
-	re["COMPARATORTRIM"] = regexp.MustCompile("(?g)" + src["COMPARATORTRIM"])
+	// re["COMPARATORTRIM"] = regexp.MustCompile("(?g)" + src["COMPARATORTRIM"])
 	// var comparatorTrimReplace = "$1$2$3"
 
 	// Something like `1.2.3 - 1.2.4`
