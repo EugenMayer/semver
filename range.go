@@ -2,32 +2,10 @@ package semver
 
 import (
 	"fmt"
-	"strconv"
+	"regexp"
 	"strings"
 	"unicode"
 )
-
-type wildcardType int
-
-const (
-	noneWildcard  wildcardType = iota
-	majorWildcard wildcardType = 1
-	minorWildcard wildcardType = 2
-	patchWildcard wildcardType = 3
-)
-
-func wildcardTypefromInt(i int) wildcardType {
-	switch i {
-	case 1:
-		return majorWildcard
-	case 2:
-		return minorWildcard
-	case 3:
-		return patchWildcard
-	default:
-		return noneWildcard
-	}
-}
 
 type comparator func(Version, Version) bool
 
@@ -110,16 +88,16 @@ func (rf Range) AND(f Range) Range {
 //
 //  - `>1.0.0 <2.0.0 || >3.0.0 !4.2.1` would match `1.2.3`, `1.9.9`, `3.1.1`, but not `4.2.1`, `2.1.1`
 func ParseRange(s string) (Range, error) {
-	s = replaceStars(s)
-	parts := splitAndTrim(s)
-	orParts, err := splitORParts(parts)
-	if err != nil {
-		return nil, err
+	var expandedParts [][]string
+	// split on boolean or ||
+	orParts := regexp.MustCompile("\\s*\\|\\|\\s*").Split(s, -1)
+	for _, part := range orParts {
+		parsed := parseRange(part)
+		if len(parsed) > 0 {
+			expandedParts = append(expandedParts, parseRange(strings.TrimSpace(part)))
+		}
 	}
-	expandedParts, err := expandWildcardVersion(orParts)
-	if err != nil {
-		return nil, err
-	}
+
 	var orFn Range
 	for _, p := range expandedParts {
 		var andFn Range
@@ -151,35 +129,6 @@ func ParseRange(s string) (Range, error) {
 	return orFn, nil
 }
 
-// Support * and X as wildcards by rewriting them to "x"
-func replaceStars(s string) string {
-	s = strings.ReplaceAll(s, "*", "x")
-	s = strings.ReplaceAll(s, "X", "x")
-	return s
-}
-
-// splitORParts splits the already cleaned parts by '||'.
-// Checks for invalid positions of the operator and returns an
-// error if found.
-func splitORParts(parts []string) ([][]string, error) {
-	var ORparts [][]string
-	last := 0
-	for i, p := range parts {
-		if p == "||" {
-			if i == 0 {
-				return nil, fmt.Errorf("First element in range is '||'")
-			}
-			ORparts = append(ORparts, parts[last:i])
-			last = i + 1
-		}
-	}
-	if last == len(parts) {
-		return nil, fmt.Errorf("Last element in range is '||'")
-	}
-	ORparts = append(ORparts, parts[last:])
-	return ORparts, nil
-}
-
 // buildVersionRange takes a slice of 2: operator and version
 // and builds a versionRange, otherwise an error.
 func buildVersionRange(opStr, vStr string) (*versionRange, error) {
@@ -209,38 +158,6 @@ func inArray(s byte, list []byte) bool {
 	return false
 }
 
-// splitAndTrim splits a range string by spaces and cleans whitespaces
-func splitAndTrim(s string) (result []string) {
-	last := 0
-	var lastChar byte
-	excludeFromSplit := []byte{'>', '<', '='}
-	for i := 0; i < len(s); i++ {
-		if s[i] == ' ' && !inArray(lastChar, excludeFromSplit) {
-			if last < i-1 {
-				result = append(result, s[last:i])
-			}
-			last = i + 1
-		} else if s[i] != ' ' {
-			lastChar = s[i]
-		}
-	}
-	if last < len(s) {
-		result = append(result, s[last:])
-	}
-
-	for i, v := range result {
-		result[i] = strings.Replace(v, " ", "", -1)
-	}
-
-	// parts := strings.Split(s, " ")
-	// for _, x := range parts {
-	// 	if s := strings.TrimSpace(x); len(s) != 0 {
-	// 		result = append(result, s)
-	// 	}
-	// }
-	return
-}
-
 // splitComparatorVersion splits the comparator from the version.
 // Input must be free of leading or trailing spaces.
 func splitComparatorVersion(s string) (string, string, error) {
@@ -253,189 +170,6 @@ func splitComparatorVersion(s string) (string, string, error) {
 		return "", "", fmt.Errorf("Could not get version from string: %q", s)
 	}
 	return strings.TrimSpace(s[0:i]), s[i:], nil
-}
-
-// getWildcardType will return the type of wildcard that the
-// passed version contains
-func getWildcardType(vStr string) wildcardType {
-	parts := strings.Split(vStr, ".")
-	nparts := len(parts)
-	wildcard := parts[nparts-1]
-
-	// handle case where nparts = 1 and no wildcard
-	if nparts == 1 {
-		_, err := strconv.ParseUint(parts[0], 10, 64)
-		if err == nil {
-			return minorWildcard
-		}
-	}
-
-	possibleWildcardType := wildcardTypefromInt(nparts)
-	if wildcard == "x" {
-		return possibleWildcardType
-	}
-
-	return noneWildcard
-}
-
-// createVersionFromWildcard will convert a wildcard version
-// into a regular version, replacing 'x's with '0's, handling
-// special cases like '1.x.x' and '1.x'
-func createVersionFromWildcard(vStr string) string {
-	// handle 1.x.x
-	vStr2 := strings.Replace(vStr, ".x.x", ".x", 1)
-	vStr2 = strings.Replace(vStr2, ".x", ".0", 1)
-	parts := strings.Split(vStr2, ".")
-
-	// handle 1.x
-	if len(parts) == 2 {
-		return vStr2 + ".0"
-	}
-
-	// handle 1
-	if len(parts) == 1 {
-		return vStr2 + ".0.0"
-	}
-
-	return vStr2
-}
-
-// incrementMajorVersion will increment the major version
-// of the passed version
-func incrementMajorVersion(vStr string) (string, error) {
-	parts := strings.Split(vStr, ".")
-	i, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return "", err
-	}
-	parts[0] = strconv.Itoa(i + 1)
-	for i := range parts {
-		if i != 0 {
-			parts[i] = "0"
-		}
-	}
-
-	return strings.Join(parts, "."), nil
-}
-
-// incrementMajorVersion will increment the minor version
-// of the passed version
-func incrementMinorVersion(vStr string) (string, error) {
-	parts := strings.Split(vStr, ".")
-	i, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return "", err
-	}
-	parts[1] = strconv.Itoa(i + 1)
-	if len(parts) > 2 {
-		parts[2] = "0"
-	}
-
-	return strings.Join(parts, "."), nil
-}
-
-// expandWildcardVersion will expand wildcards inside versions
-// following these rules:
-//
-// * when dealing with patch wildcards:
-// >= 1.2.x    will become    >= 1.2.0
-// <= 1.2.x    will become    <  1.3.0
-// >  1.2.x    will become    >= 1.3.0
-// <  1.2.x    will become    <  1.2.0
-// != 1.2.x    will become    <  1.2.0 >= 1.3.0
-//
-// * when dealing with minor wildcards:
-// >= 1.x      will become    >= 1.0.0
-// <= 1.x      will become    <  2.0.0
-// >  1.x      will become    >= 2.0.0
-// <  1.0      will become    <  1.0.0
-// != 1.x      will become    <  1.0.0 >= 2.0.0
-//
-// * when dealing with wildcards without
-// version operator:
-// 1.2.x       will become    >= 1.2.0 < 1.3.0
-// 1.x         will become    >= 1.0.0 < 2.0.0
-// 1           will become    >= 1.0.0 < 2.0.0
-func expandWildcardVersion(parts [][]string) ([][]string, error) {
-	var expandedParts [][]string
-	for _, p := range parts {
-		var newParts []string
-		for _, ap := range p {
-			if ap == "x" {
-				ap = ">=0.0.0"
-			} else if major, err := strconv.ParseInt(ap, 10, 64); err == nil {
-				// if the part is only a major version number, ex: "1"
-				newParts = append(newParts, fmt.Sprintf(">=%d.0.0", major))
-				ap = fmt.Sprintf("<%d.0.0", major+1)
-			} else if strings.Contains(ap, "x") || strings.Contains(ap, "~") || strings.Contains(ap, "^") {
-				opStr, vStr, err := splitComparatorVersion(ap)
-				if err != nil {
-					return nil, err
-				}
-
-				versionWildcardType := getWildcardType(vStr)
-				flatVersion := createVersionFromWildcard(vStr)
-
-				var resultOperator string
-				var shouldIncrementVersion bool
-				switch opStr {
-				case ">":
-					resultOperator = ">="
-					shouldIncrementVersion = true
-				case ">=":
-					resultOperator = ">="
-				case "<":
-					resultOperator = "<"
-				case "<=":
-					resultOperator = "<"
-					shouldIncrementVersion = true
-				case "", "=", "==":
-					newParts = append(newParts, ">="+flatVersion)
-					resultOperator = "<"
-					shouldIncrementVersion = true
-				case "!=", "!":
-					newParts = append(newParts, "<"+flatVersion)
-					resultOperator = ">="
-					shouldIncrementVersion = true
-				case "~":
-					switch versionWildcardType {
-					case noneWildcard, patchWildcard:
-						newParts = append(newParts, ">="+flatVersion)
-						versionWildcardType = patchWildcard
-						resultOperator = "<"
-						shouldIncrementVersion = true
-					default:
-						newParts = append(newParts, ">="+flatVersion)
-						resultOperator = "<"
-						shouldIncrementVersion = true
-					}
-				case "^":
-					newParts = append(newParts, ">="+flatVersion)
-					versionWildcardType = minorWildcard
-					resultOperator = "<"
-					shouldIncrementVersion = true
-				}
-
-				var resultVersion string
-				if shouldIncrementVersion {
-					switch versionWildcardType {
-					case patchWildcard:
-						resultVersion, _ = incrementMinorVersion(flatVersion)
-					case minorWildcard:
-						resultVersion, _ = incrementMajorVersion(flatVersion)
-					}
-				} else {
-					resultVersion = flatVersion
-				}
-
-				ap = resultOperator + resultVersion
-			}
-			newParts = append(newParts, ap)
-		}
-		expandedParts = append(expandedParts, newParts)
-	}
-
-	return expandedParts, nil
 }
 
 func parseComparator(s string) comparator {

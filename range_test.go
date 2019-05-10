@@ -1,15 +1,9 @@
 package semver
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 )
-
-type wildcardTypeTest struct {
-	input        string
-	wildcardType wildcardType
-}
 
 type comparatorTest struct {
 	input      string
@@ -72,30 +66,6 @@ func testLT(f comparator) bool {
 
 func testLE(f comparator) bool {
 	return f(v1, v2) && f(v2, v3) && !f(v2, v1)
-}
-
-func TestSplitAndTrim(t *testing.T) {
-	tests := []struct {
-		i string
-		s []string
-	}{
-		{"1.2.3 1.2.3", []string{"1.2.3", "1.2.3"}},
-		{"     1.2.3     1.2.3     ", []string{"1.2.3", "1.2.3"}},       // Spaces
-		{"  >=   1.2.3   <=  1.2.3   ", []string{">=1.2.3", "<=1.2.3"}}, // Spaces between operator and version
-		{"1.2.3 || >=1.2.3 <1.2.3", []string{"1.2.3", "||", ">=1.2.3", "<1.2.3"}},
-		{"      1.2.3      ||     >=1.2.3     <1.2.3    ", []string{"1.2.3", "||", ">=1.2.3", "<1.2.3"}},
-		{"10", []string{"10"}},
-		{"1", []string{"1"}},
-		{"1.x", []string{"1.x"}},
-		{"x", []string{"x"}},
-	}
-
-	for _, tc := range tests {
-		p := splitAndTrim(tc.i)
-		if !reflect.DeepEqual(p, tc.s) {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.s, p)
-		}
-	}
 }
 
 func TestSplitComparatorVersion(t *testing.T) {
@@ -175,152 +145,6 @@ func TestBuildVersionRange(t *testing.T) {
 		}
 	}
 
-}
-
-func TestRepalceString(t *testing.T) {
-	tests := []struct {
-		i string
-		o string
-	}{
-		{">1.*.*", ">1.x.x"},
-		{"1.X", "1.x"},
-		{"2.8.*", "2.8.x"},
-		{"*", "x"},
-		{"X", "x"},
-	}
-	for _, tc := range tests {
-		o := replaceStars(tc.i)
-		if !reflect.DeepEqual(tc.o, o) {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
-		}
-	}
-}
-
-func TestSplitORParts(t *testing.T) {
-	tests := []struct {
-		i []string
-		o [][]string
-	}{
-		{[]string{">1.2.3", "||", "<1.2.3", "||", "=1.2.3"}, [][]string{
-			{">1.2.3"},
-			{"<1.2.3"},
-			{"=1.2.3"},
-		}},
-		{[]string{">1.2.3", "<1.2.3", "||", "=1.2.3"}, [][]string{
-			{">1.2.3", "<1.2.3"},
-			{"=1.2.3"},
-		}},
-		{[]string{">1.2.3", "||"}, nil},
-		{[]string{"||", ">1.2.3"}, nil},
-	}
-	for _, tc := range tests {
-		o, err := splitORParts(tc.i)
-		if err != nil && tc.o != nil {
-			t.Errorf("Unexpected error for case %q: %s", tc.i, err)
-		}
-		if !reflect.DeepEqual(tc.o, o) {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
-		}
-	}
-}
-
-func TestGetWildcardType(t *testing.T) {
-	wildcardTypeTests := []wildcardTypeTest{
-		{"x", majorWildcard},
-		{"1", minorWildcard},
-		{"1.x", minorWildcard},
-		{"1.2.x", patchWildcard},
-		{"fo.o.b.ar", noneWildcard},
-	}
-
-	for _, tc := range wildcardTypeTests {
-		o := getWildcardType(tc.input)
-		if o != tc.wildcardType {
-			t.Errorf("Invalid for case: %q: Expected %q, got: %q", tc.input, tc.wildcardType, o)
-		}
-	}
-}
-
-func TestCreateVersionFromWildcard(t *testing.T) {
-	tests := []struct {
-		i string
-		s string
-	}{
-		{"1.2.x", "1.2.0"},
-		{"1.x", "1.0.0"},
-		{"1", "1.0.0"},
-	}
-
-	for _, tc := range tests {
-		p := createVersionFromWildcard(tc.i)
-		if p != tc.s {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.s, p)
-		}
-	}
-}
-
-func TestIncrementMajorVersion(t *testing.T) {
-	tests := []struct {
-		i string
-		s string
-	}{
-		{"1.2.3", "2.0.0"},
-		{"1.2", "2.0"},
-		{"foo.bar", ""},
-	}
-
-	for _, tc := range tests {
-		p, _ := incrementMajorVersion(tc.i)
-		if p != tc.s {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.s, p)
-		}
-	}
-}
-
-func TestIncrementMinorVersion(t *testing.T) {
-	tests := []struct {
-		i string
-		s string
-	}{
-		{"1.2.3", "1.3.0"},
-		{"1.2", "1.3"},
-		{"foo.bar", ""},
-	}
-
-	for _, tc := range tests {
-		p, _ := incrementMinorVersion(tc.i)
-		if p != tc.s {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.s, p)
-		}
-	}
-}
-
-func TestExpandWildcardVersion(t *testing.T) {
-	tests := []struct {
-		i [][]string
-		o [][]string
-	}{
-		{[][]string{{"foox"}}, nil},
-		{[][]string{{">=1.2.x"}}, [][]string{{">=1.2.0"}}},
-		{[][]string{{"<=1.2.x"}}, [][]string{{"<1.3.0"}}},
-		{[][]string{{">1.2.x"}}, [][]string{{">=1.3.0"}}},
-		{[][]string{{"<1.2.x"}}, [][]string{{"<1.2.0"}}},
-		{[][]string{{"!=1.2.x"}}, [][]string{{"<1.2.0", ">=1.3.0"}}},
-		{[][]string{{">=1.x"}}, [][]string{{">=1.0.0"}}},
-		{[][]string{{"<=1.x"}}, [][]string{{"<2.0.0"}}},
-		{[][]string{{">1.x"}}, [][]string{{">=2.0.0"}}},
-		{[][]string{{"<1.x"}}, [][]string{{"<1.0.0"}}},
-		{[][]string{{"!=1.x"}}, [][]string{{"<1.0.0", ">=2.0.0"}}},
-		{[][]string{{"1.2.x"}}, [][]string{{">=1.2.0", "<1.3.0"}}},
-		{[][]string{{"1.x"}}, [][]string{{">=1.0.0", "<2.0.0"}}},
-	}
-
-	for _, tc := range tests {
-		o, _ := expandWildcardVersion(tc.i)
-		if !reflect.DeepEqual(tc.o, o) {
-			t.Errorf("Invalid for case %q: Expected %q, got: %q", tc.i, tc.o, o)
-		}
-	}
 }
 
 func TestVersionRangeToRange(t *testing.T) {
@@ -632,45 +456,66 @@ func TestParseRange(t *testing.T) {
 		}},
 		// what would this even mean?
 		{"^x", nil},
-	}
-
-	for _, tc := range tests {
-		r, err := ParseRange(tc.i)
-		if err != nil && tc.t != nil {
-			t.Errorf("Error parsing range %q: %s", tc.i, err)
-			continue
-		}
-		for _, tvc := range tc.t {
-			v := MustParse(tvc.v)
-			if res := r(v); res != tvc.b {
-				t.Errorf("Invalid for case %q matching %q: Expected %t, got: %t", tc.i, tvc.v, tvc.b, res)
-			}
-		}
-
-	}
-}
-
-func TestParseRangeTwo(t *testing.T) {
-	type tv struct {
-		v string
-		b bool
-	}
-	tests := []struct {
-		i string
-		t []tv
-	}{
-		{"^10.14.1 || ^8.15.0", []tv{
+		// More range tests
+		{">=11 <12", []tv{
 			{"10.1.4", false},
-			{"10.1.1", false},
-			{"10.2.0", false},
-			{"10.14.0", false},
-			{"10.14.1", true},
-			{"10.16.1", true},
-			{"8.14.0", false},
-			{"8.15.0", true},
-			{"8.95.0", true},
-			{"10.0.0", false},
+			{"11.0.0", true},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=11.x <12.x", []tv{
+			{"10.1.4", false},
+			{"11.0.0", true},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8.* <12", []tv{
+			{"10.1.4", true},
+			{"11.0.0", true},
+			{"8.0.0", true},
+			{"7.9.0", false},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8 <12", []tv{
+			{"10.1.4", true},
+			{"11.0.0", true},
+			{"8.0.0", true},
+			{"7.9.0", false},
+			{"11.99.99", true},
+			{"12.0.0", false},
+		}},
+		{">=8.9.1 <9.0", []tv{
+			{"8.9.1", true},
+			{"8.9.0", false},
 			{"9.0.0", false},
+			{"8.9.2", true},
+			{"10.0.0", false},
+		}},
+		// This gets converted to >=1.0.0 <4.0.0
+		{"1 - 3", []tv{
+			{"1.0.0", true},
+			{"4.0.0", false},
+			{"3.0.0", true},
+			{"3.9.2", true},
+			{"2.1.3", true},
+		}},
+		// impossible range
+		{">4 <3", nil},
+		// Carets behave differently for major versions < 1
+		// ^1.2.3 := >=1.2.3 <2.0.0
+		// ^0.2.3 := >=0.2.3 <0.3.0
+		{"^1.2.3", []tv{
+			{"1.2.3", true},
+			{"1.2.2", false},
+			{"1.8.9", true},
+			{"2.0.0", false},
+		}},
+		{"^0.2.3", []tv{
+			{"0.2.3", true},
+			{"0.2.2", false},
+			{"0.3.1", false},
+			{"1.0.0", false},
 		}},
 	}
 
