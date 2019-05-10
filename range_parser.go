@@ -7,6 +7,11 @@ import (
 )
 
 // Logic converted from https://github.com/npm/node-semver
+//
+// This isn't the easiest code to follow, but it is battle-tested
+// in the Node ecosystem, so I've tried to keep it as close to the
+// original source as I reasonably can
+
 func getRegex() map[string]*regexp.Regexp {
 	// Max safe segment length for coercion.
 	var MaxSafeComponentLength = 16
