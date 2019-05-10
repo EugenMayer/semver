@@ -134,9 +134,6 @@ func getRegex() map[string]*regexp.Regexp {
 	src["LONETILDE"] = "(?:~>?)"
 
 	src["TILDETRIM"] = "(\\s*)" + src["LONETILDE"] + "\\s+"
-	// re["TILDETRIM"] = new RegExp(src["TILDETRIM"], "g")
-	// re["TILDETRIM"] = regexp.MustCompile("(?g)" + src["TILDETRIM"])
-	// var tildeTrimReplace = "$1~"
 
 	src["TILDE"] = "^" + src["LONETILDE"] + src["XRANGEPLAIN"] + "$"
 	src["TILDELOOSE"] = "^" + src["LONETILDE"] + src["XRANGEPLAINLOOSE"] + "$"
@@ -146,9 +143,6 @@ func getRegex() map[string]*regexp.Regexp {
 	src["LONECARET"] = "(?:\\^)"
 
 	src["CARETTRIM"] = "(\\s*)" + src["LONECARET"] + "\\s+"
-	// re["CARETTRIM"] = new RegExp(src["CARETTRIM"], "g")
-	// re["CARETTRIM"] = regexp.MustCompile("(?g)" + src["CARETTRIM"])
-	// var caretTrimReplace = "$1^"
 
 	src["CARET"] = "^" + src["LONECARET"] + src["XRANGEPLAIN"] + "$"
 	src["CARETLOOSE"] = "^" + src["LONECARET"] + src["XRANGEPLAINLOOSE"] + "$"
@@ -161,11 +155,6 @@ func getRegex() map[string]*regexp.Regexp {
 	// it modifies, so that `> 1.2.3` ==> `>1.2.3`
 	src["COMPARATORTRIM"] = "(\\s*)" + src["GTLT"] +
 		"\\s*(" + LOOSEPLAIN + "|" + src["XRANGEPLAIN"] + ")"
-
-	// this one has to use the /g flag
-	// re["COMPARATORTRIM"] = new RegExp(src["COMPARATORTRIM"], "g")
-	// re["COMPARATORTRIM"] = regexp.MustCompile("(?g)" + src["COMPARATORTRIM"])
-	// var comparatorTrimReplace = "$1$2$3"
 
 	// Something like `1.2.3 - 1.2.4`
 	// Note that these all use the loose form, because they"ll be
@@ -185,9 +174,7 @@ func getRegex() map[string]*regexp.Regexp {
 	src["STAR"] = "(<|>)?=?\\s*\\*"
 
 	for key, exp := range src {
-		if _, ok := re[key]; !ok {
-			re[key] = regexp.MustCompile(exp)
-		}
+		re[key] = regexp.MustCompile(exp)
 	}
 
 	return re
@@ -201,10 +188,8 @@ func parseRange(s string) []string {
 	// `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
 	s = hyphenReplace(re, s)
 
-	// fmt.Println("hyphen replace", s)
 	// `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
 	s = re["COMPARATORTRIM"].ReplaceAllString(s, "$1$2$3")
-	// fmt.Println("comparator trim", s)
 	// `~ 1.2.3` => `~1.2.3`
 	s = re["TILDETRIM"].ReplaceAllString(s, "$1~")
 	// `^ 1.2.3` => `^1.2.3
@@ -212,7 +197,6 @@ func parseRange(s string) []string {
 	// normalize spaces
 	s = strings.Join(regexp.MustCompile("\\s+").Split(s, -1), " ")
 
-	// fmt.Println("post trim", s)
 	// At this point, the range is completely trimmed and
 	// ready to be split into comparators.
 	for _, comp := range strings.Split(s, " ") {
@@ -286,7 +270,6 @@ func hyphenReplace(re map[string]*regexp.Regexp, s string) string {
 	return strings.TrimSpace(from + " " + to)
 }
 
-// ~, ~> --> * (any, kinda silly)
 // ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0
 // ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0
 // ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0
@@ -339,7 +322,6 @@ func replaceTilde(re map[string]*regexp.Regexp, s string) string {
 	return ret
 }
 
-// ^ --> * (any, kinda silly)
 // ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0
 // ^2.0, ^2.0.x --> >=2.0.0 <3.0.0
 // ^1.2, ^1.2.x --> >=1.2.0 <2.0.0

@@ -492,6 +492,14 @@ func TestParseRange(t *testing.T) {
 			{"8.9.2", true},
 			{"10.0.0", false},
 		}},
+		// This gets converted to >=1.0.0 <4.0.0
+		{"1 - 3", []tv{
+			{"1.0.0", true},
+			{"4.0.0", false},
+			{"3.0.0", true},
+			{"3.9.2", true},
+			{"2.1.3", true},
+		}},
 	}
 
 	for _, tc := range tests {
