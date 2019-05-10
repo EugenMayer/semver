@@ -500,6 +500,23 @@ func TestParseRange(t *testing.T) {
 			{"3.9.2", true},
 			{"2.1.3", true},
 		}},
+		// impossible range
+		{">4 <3", nil},
+		// Carets behave differently for major versions < 1
+		// ^1.2.3 := >=1.2.3 <2.0.0
+		// ^0.2.3 := >=0.2.3 <0.3.0
+		{"^1.2.3", []tv{
+			{"1.2.3", true},
+			{"1.2.2", false},
+			{"1.8.9", true},
+			{"2.0.0", false},
+		}},
+		{"^0.2.3", []tv{
+			{"0.2.3", true},
+			{"0.2.2", false},
+			{"0.3.1", false},
+			{"1.0.0", false},
+		}},
 	}
 
 	for _, tc := range tests {
