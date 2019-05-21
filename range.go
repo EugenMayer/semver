@@ -165,11 +165,15 @@ func splitComparatorVersion(s string) (string, string, error) {
 	if s == "x" {
 		return "", "x", nil
 	}
-	i := strings.IndexFunc(s, unicode.IsDigit)
+	i := strings.IndexFunc(s, isVersionString)
 	if i == -1 {
 		return "", "", fmt.Errorf("Could not get version from string: %q", s)
 	}
 	return strings.TrimSpace(s[0:i]), s[i:], nil
+}
+
+func isVersionString(c rune) bool {
+	return unicode.IsDigit(c) || c == 118 /* 118 == 'v' */
 }
 
 func parseComparator(s string) comparator {

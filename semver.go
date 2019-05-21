@@ -266,6 +266,9 @@ func Parse(s string) (Version, error) {
 		return Version{}, errors.New("Version string empty")
 	}
 
+	// strip off any leading 'v' if present
+	s = strings.TrimPrefix(s, "v")
+
 	// Split into major.minor.(patch+pr+meta)
 	parts := strings.SplitN(s, ".", 3)
 	if len(parts) != 3 {

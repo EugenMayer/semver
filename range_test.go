@@ -85,6 +85,7 @@ func TestSplitComparatorVersion(t *testing.T) {
 		{"1.x.x", []string{"", "1.x.x"}},
 		{"1.x", []string{"", "1.x"}},
 		{">=1.x", []string{">=", "1.x"}},
+		{">=v1.x", []string{">=", "v1.x"}},
 		{"x", []string{"", "x"}},
 		{"error", nil},
 	}
@@ -516,6 +517,29 @@ func TestParseRange(t *testing.T) {
 			{"0.2.2", false},
 			{"0.3.1", false},
 			{"1.0.0", false},
+		}},
+		{"v1.2.3", []tv{
+			{"1.2.2", false},
+			{"1.2.3", true},
+			{"1.2.4", false},
+		}},
+		{"=v1.2.3", []tv{
+			{"1.2.2", false},
+			{"1.2.3", true},
+			{"1.2.4", false},
+		}},
+		{"^v0.2.3", []tv{
+			{"0.2.3", true},
+			{"0.2.2", false},
+			{"0.3.1", false},
+			{"1.0.0", false},
+		}},
+		{"v1 - v3", []tv{
+			{"1.0.0", true},
+			{"4.0.0", false},
+			{"3.0.0", true},
+			{"3.9.2", true},
+			{"2.1.3", true},
 		}},
 	}
 

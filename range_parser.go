@@ -221,6 +221,7 @@ func parseComparatorString(re map[string]*regexp.Regexp, s string) string {
 	s = replaceTildes(re, s)
 	s = replaceXRanges(re, s)
 	s = replaceStars(re, s)
+	s = replaceV(re, s)
 	return s
 }
 
@@ -491,6 +492,10 @@ func replaceXRange(re map[string]*regexp.Regexp, s string) string {
 
 func replaceStars(re map[string]*regexp.Regexp, s string) string {
 	return re["STAR"].ReplaceAllString(strings.TrimSpace(s), ">=0.0.0")
+}
+
+func replaceV(re map[string]*regexp.Regexp, s string) string {
+	return s
 }
 
 func isX(s string) bool {
