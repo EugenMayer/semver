@@ -1,17 +1,15 @@
-semver for golang [![Build Status](https://travis-ci.org/blang/semver.svg?branch=master)](https://travis-ci.org/blang/semver) [![GoDoc](https://godoc.org/github.com/blang/semver?status.svg)](https://godoc.org/github.com/blang/semver) [![Coverage Status](https://img.shields.io/coveralls/blang/semver.svg)](https://coveralls.io/r/blang/semver?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/blang/semver)](https://goreportcard.com/report/github.com/blang/semver)
-======
 
 semver is a [Semantic Versioning](http://semver.org/) library written in golang. It fully covers spec version `2.0.0`.
 
 Usage
 -----
 ```bash
-$ go get github.com/blang/semver
+$ go get github.com/eugenmayer/semver
 ```
 Note: Always vendor your dependencies or fix on a specific version tag.
 
 ```go
-import github.com/blang/semver
+import github.com/eugenmayer/semver
 v1, err := semver.Make("1.0.0-beta")
 v2, err := semver.Make("2.0.0-beta")
 v1.Compare(v2)
@@ -96,7 +94,7 @@ Example
 Have a look at full examples in [examples/main.go](examples/main.go)
 
 ```go
-import github.com/blang/semver
+import github.com/eugenmayer/semver/v3
 
 v, err := semver.Make("0.0.1-alpha.preview+123.github")
 fmt.Printf("Major: %d\n", v.Major)
