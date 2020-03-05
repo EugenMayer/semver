@@ -94,7 +94,7 @@ Example
 Have a look at full examples in [examples/main.go](examples/main.go)
 
 ```go
-import github.com/eugenmayer/semver/v3
+import github.com/eugenmayer/semver/v4
 
 v, err := semver.Make("0.0.1-alpha.preview+123.github")
 fmt.Printf("Major: %d\n", v.Major)
